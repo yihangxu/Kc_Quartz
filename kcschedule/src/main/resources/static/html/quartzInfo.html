@@ -1,0 +1,397 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN""http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>定时任务管理</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <link href="../css/demo.css" rel="stylesheet" type="text/css"/>
+
+    <script src="../js/boot.js" type="text/javascript"></script>
+    <script src="../js/miniui/locale/zh_CN.js" type="text/javascript"></script>
+    <script src="../js/ColumnsMenu.js" type="text/javascript"></script>
+</head>
+<body>
+<h1>定时任务管理</h1>
+<div class="mini-splitter" style="width:100%;height:750px;">
+	<div size="300" showCollapseButton="true" expanded="false">
+		<div class="mini-fit">
+			<ul id="dirTree" class="mini-tree" style="width:100%;" nodesField="childList"
+	            showTreeIcon="true" textField="displayName" idField="dirName" expandOnLoad="true">
+	        </ul>
+		</div>
+	</div>
+	<div showCollapseButton="true">
+	    <div class="mini-toolbar" style="border-bottom:0;padding:0px;">
+	        <table style="width:100%;">
+	            <tr>
+	                <td style="width:100%;">
+	                    <a class="mini-button" iconCls="icon-save" onclick="runTask()" plain="true">手动触发执行</a>
+	                    <a class="mini-button" iconCls="icon-add" onclick="openReasonWindow('true')" plain="true">启用定时任务</a>
+	                    <a class="mini-button" iconCls="icon-remove" onclick="openReasonWindow('false')" plain="true">停用定时任务</a>
+	                </td>
+	                <td style="white-space:nowrap;">
+	                    <select class="mini-combobox" id="type">
+	                        <option value="1">----执行状态----</option>
+	                        <option value="成功">成功</option>
+	                        <option value="失败">失败</option>
+	                    </select>
+	                    <select class="mini-combobox" id="isRun">
+	                        <option value="1">----定时任务状态----</option>
+	                        <option value="true">启用</option>
+	                        <option value="false">停用</option>
+	                    </select>
+	                    <input id="scheduledName" class="mini-textbox" emptyText="任务名称" style="width:150px;"
+	                           onenter="onKeyEnter"/>
+	                    <input id="functionName" class="mini-textbox" emptyText="方法名称" style="width:150px;"
+	                           onenter="onKeyEnter"/>
+	                    <a class="mini-button" onclick="onloadTree()">查询</a>
+	                </td>
+	            </tr>
+	        </table>
+	    </div>
+		<div id="datagrid1" class="mini-datagrid" style="width:100%;height:700px;"
+		     url="../kcschedule/getScan" idField="id"
+		     allowResize="true" allowCellSelect="true" onShowRowDetail="onShowRowDetail"
+		     showPager="true" pageSize="20">
+		    <div property="columns">
+		        <div type="checkcolumn"></div>
+		        <div type="indexcolumn"></div>
+		        <div field="scheduledName" width="150" headerAlign="center" allowSort="true" renderer="onTaskRenderer">任务名</div>
+		        <div field="functionName" headerAlign="center" width="200" allowSort="true" renderer="onFunctionRenderer">方法</div>
+		        <div field="cron" width="120" headerAlign="center" allowSort="true" showCellTip="false" align="center">cron</div>
+		        <div field="nextDate" headerAlign="center" width="100" allowSort="true" align="center"
+		             dateFormat="yyyy-MM-dd HH:mm:ss">下次执行时期
+			        </div>
+			        <div field="isRun" headerAlign="center" width="100" allowSort="true" align="center" renderer="onRunStatusRenderer">状态</div>
+			        <div field="switchLog" headerAlign="center" width="120" align="center" renderer="onSwitchLogRenderer">启停原因</div>
+			        <div type="expandcolumn" width="100">执行详情</div>
+		    </div>
+		</div>
+	</div>
+</div>
+
+<!-- 启停原因弹窗 -->
+<div id="reasonWindow" class="mini-window" title="启停原因" style="width:400px;height:200px;"
+     showModal="true" allowResize="true" allowDrag="true">
+    <table style="width:100%;height:100%;">
+        <tr>
+            <td style="width:80px;">操作类型：</td>
+            <td><label id="operationLabel"></label></td>
+        </tr>
+        <tr>
+            <td><span style="color:red;">*</span>启停原因：</td>
+            <td>
+                <input id="reasonInput" class="mini-textarea" style="width:280px;height:60px;" required="true"/>
+            </td>
+        </tr>
+        <tr>
+            <td>操作人：</td>
+            <td><input id="operatorInput" class="mini-textbox" style="width:150px;"/></td>
+        </tr>
+        <tr>
+            <td colspan="2" style="text-align:center;padding-top:10px;">
+                <a class="mini-button" onclick="confirmSwitchTask()" style="width:60px;">确定</a>
+                <a class="mini-button" onclick="closeReasonWindow()" style="width:60px;margin-left:10px;">取消</a>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<!-- 启停记录弹窗 -->
+<div id="switchLogWindow" class="mini-window" title="启停记录" style="width:700px;height:400px;"
+     showModal="true" allowResize="true" allowDrag="true">
+    <div id="switchLogGrid" class="mini-datagrid" style="width:100%;height:100%;" showPager="true" pageSize="10">
+        <div property="columns">
+            <div type="indexcolumn"></div>
+            <div field="operation" width="60" headerAlign="center" align="center">操作</div>
+            <div field="reason" width="200" headerAlign="center">原因</div>
+            <div field="operator" width="80" headerAlign="center" align="center">操作人</div>
+            <div field="operateTime" width="140" headerAlign="center" align="center"
+                 dateFormat="yyyy-MM-dd HH:mm:ss">操作时间</div>
+        </div>
+    </div>
+</div>
+
+<div id="detailGrid_Form" style="display:none;">
+	<div id="employee_grid" class="mini-datagrid" style="width:100%;height:600px;"
+		 url="../kcschedule/taskName" title="详细信息" showPager="false">
+		<div property="columns">
+			<div type="indexcolumn"></div>
+			<div field="cron" width="120" headerAlign="center" allowSort="true">cron</div>
+			<div field="scheduledName" width="100" allowSort="true" align="center" headerAlign="center">任务名字</div>
+			<div field="describe" width="100" allowSort="true">任务详情</div>
+			<div field="runDate" width="100" headerAlign="center" allowSort="true" dateFormat="yyyy-MM-dd HH:mm:ss">运行的时间</div>
+			<div field="runTime" width="100" headerAlign="center" allowSort="true">执行时间(毫秒)</div>
+			<div field="nextDate" width="100" allowSort="true" dateFormat="yyyy-MM-dd HH:mm:ss">下次执行时间</div>
+			<div field="errorMsg" width="100" headerAlign="center" allowSort="true">错误信息</div>
+			<div field="flag" width="100" headerAlign="center" allowSort="true">是否成功</div>
+		</div>
+	</div>
+</div>
+
+
+
+<script type="text/javascript">
+    mini.parse();
+    var dirTree = mini.get("dirTree");
+    var grid = mini.get("datagrid1");
+    var employee_grid = mini.get("employee_grid");
+    var detailGrid_Form = document.getElementById("detailGrid_Form");
+
+	function onRunStatusRenderer(e){
+			if(e.value){
+				return "启用";
+			}else{
+				return "停用";
+			}
+		}
+
+	function onTaskRenderer(e){
+			let record = e.record;
+			return "<span title='" + record.describe + "' >" + e.value + "</span>";
+		}
+
+	function onFunctionRenderer(e){
+			let record = e.record;
+			let shortName = record.className.split('.').pop() || record.functionName;
+	        let showName =  shortName + "." + e.value;
+			return "<span title='" + record.className + "' onclick='console.info(\"" + record.className + "\")' >" + showName + "</span>";
+		}
+
+	/*加载数据*/
+    function  onloadTree(){
+			var messageId = mini.loading("数据正在加载中...", "Loading");
+			let scheduledName = mini.get("scheduledName").getValue();
+	        let functionName = mini.get("functionName").getValue();
+	        let type = mini.get("type").getValue();
+	        let isRun = mini.get("isRun").getValue();
+	        if (type == "1") {
+	            type = ""
+	        }
+	        if (isRun == "1") {
+	            isRun = ""
+	        }
+	        $.ajax({
+	            type: "get",
+	            url: "../kcschedule/getDirScan",
+	            contentType: "application/json",
+	            dataType: "json",
+				data:{scheduledName: scheduledName, functionName: functionName, type: type,isRun:isRun},
+	            success: function (response) {
+					mini.hideMessageBox(messageId);
+	                var resData=mini.decode(response);
+	                dirTree.loadData([resData]);
+					allData = resData.scheduledList;
+					if(slectNode){
+						let existNodes = dirTree.findNodes(function(node){
+						    if(node.dirName == slectNode.dirName) return true;
+						});
+						if(existNodes && existNodes.length > 0){
+							dirTree.selectNode(existNodes[0]);
+							allData = existNodes[0].scheduledList;
+						}
+					}
+					fillData(0, grid.getPageSize());
+	            },
+	            error: function (jqXHR, textStatus, errorThrown) {
+					mini.hideMessageBox(messageId);
+	                mini.alert(jqXHR.responseText);
+	            }
+	        });
+	    }
+
+		// 监听分页前事件，阻止后自行设置当前数据和分页信息
+	 	var pageIndex = 0;
+	    grid.on("beforeload", function (e) {
+	        e.cancel = true;
+	        pageIndex = e.data.pageIndex, pageSize = e.data.pageSize;
+	        fillData(pageIndex, pageSize);
+	    });
+
+		var allData = [];
+	function fillData(pageIndex, pageSize){
+	    	 var totalCount = allData.length;
+			 var start = pageIndex * pageSize, end = (start + pageSize) >= totalCount ? totalCount:(start + pageSize);
+	         var arr = allData.slice(start, end);
+	         grid.setTotalCount(totalCount);
+	         grid.setPageIndex(pageIndex);
+	         grid.setPageSize(pageSize);
+	         grid.setData(arr);
+	    }
+
+		var slectNode;
+	dirTree.on("nodeclick",function(e){
+			slectNode = e.node;
+			allData = slectNode.scheduledList
+			fillData(0, grid.getPageSize());
+		});
+
+	    onloadTree();
+	    function onShowRowDetail(e) {
+	        var grid = e.sender;
+	        var row = e.record;
+	        var td = grid.getRowDetailCellEl(row);
+	        td.appendChild(detailGrid_Form);
+	        detailGrid_Form.style.display = "block";
+	        employee_grid.load({taskName: row.taskName});
+	    }
+
+	    function search() {
+			onloadTree();
+			return;
+	        let scheduledName = mini.get("scheduledName").getValue();
+	        let functionName = mini.get("functionName").getValue();
+	        let type = mini.get("type").getValue();
+	        let isRun = mini.get("isRun").getValue();
+	        if (type == "1") {
+	            type = ""
+	        }
+	        if (isRun == "1") {
+	            isRun = ""
+	        }
+	        grid.load({scheduledName: scheduledName, functionName: functionName, type: type,isRun:isRun});
+	    }
+
+	    function isRunTask(isRun) {
+	        var rows = grid.getSelecteds();
+	        var size = rows.length;
+	        if (size == 1) {
+	            var messageId = mini.loading("正在处理中...", "Loading");
+	            let row = rows[0];
+	            $.ajax({
+	                url: "../kcschedule/isRunTask",
+	                type: "POST",
+	                contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+	                data: {"taskName": row.taskName, "isRun": isRun},
+	                success: function (data) {
+	                    mini.hideMessageBox(messageId);
+	                    search();
+	                },
+	                error: function () {
+	                    mini.hideMessageBox(messageId);
+	                    alert("处理失败")
+	                }
+	            });
+	        } else {
+	            alert("只能选择一个任务")
+	        }
+
+	    }
+
+	    function runTask() {
+	        var rows = grid.getSelecteds();
+	        var size = rows.length;
+	        if (size == 1) {
+	            let row = rows[0];
+	            if (!row.isRun) {
+	                if (!confirm("该任务当前已停用，是否确定手动触发一次？")) {
+	                    return;
+	                }
+	            }
+	            var messageId = mini.loading("正在处理中...", "Loading");
+	            $.ajax({
+	                url: "../kcschedule/runTask",
+	                type: "POST",
+	                contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+	                data: {"taskName": row.taskName},
+	                success: function (data) {
+	                    mini.hideMessageBox(messageId);
+	                    search();
+	                },
+	                error: function () {
+	                    mini.hideMessageBox(messageId);
+	                    alert("处理失败")
+	                }
+	            });
+	        } else {
+	            alert("只能选择一个任务")
+	        }
+	    }
+
+	    // 启停原因弹窗相关变量
+	    var pendingSwitchParams = null;
+
+	    // 打开启停原因弹窗
+	    function openReasonWindow(isRun) {
+	        var rows = grid.getSelecteds();
+	        var size = rows.length;
+	        if (size != 1) {
+	            alert("只能选择一个任务");
+	            return;
+	        }
+	        pendingSwitchParams = {
+	            taskName: rows[0].taskName,
+	            scheduledName: rows[0].scheduledName,
+	            isRun: isRun
+	        };
+
+	        document.getElementById('operationLabel').innerText = isRun === 'true' ? '启用' : '停用';
+	        mini.get('reasonInput').setValue('');
+	        mini.get('operatorInput').setValue('');
+
+	        var win = mini.get('reasonWindow');
+	        win.show();
+	    }
+
+	    // 确认启停操作
+	    function confirmSwitchTask() {
+	        var reason = mini.get('reasonInput').getValue();
+	        if (!reason || reason.trim() === '') {
+	            alert('请填写启停原因');
+	            return;
+	        }
+
+	        var operator = mini.get('operatorInput').getValue() || '系统管理员';
+
+	        var messageId = mini.loading("正在处理中...", "Loading");
+	        $.ajax({
+	            url: "../kcschedule/isRunTaskWithReason",
+	            type: "POST",
+	            contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+	            data: {
+	                taskName: pendingSwitchParams.taskName,
+	                scheduledName: pendingSwitchParams.scheduledName,
+	                isRun: pendingSwitchParams.isRun,
+	                reason: reason,
+	                operator: operator
+	            },
+	            success: function (data) {
+	                mini.hideMessageBox(messageId);
+	                closeReasonWindow();
+	                search();
+	            },
+	            error: function () {
+	                mini.hideMessageBox(messageId);
+	                alert("处理失败")
+	            }
+	        });
+	    }
+
+	    // 关闭启停原因弹窗
+	    function closeReasonWindow() {
+	        var win = mini.get('reasonWindow');
+	        win.hide();
+	        pendingSwitchParams = null;
+	    }
+
+	    // 启停原因列渲染器
+	    function onSwitchLogRenderer(e) {
+	        var record = e.record;
+	        return '<a href="javascript:void(0)" onclick="showSwitchLog(\'' + record.taskName + '\')">查看</a>';
+	    }
+
+	    // 查看启停记录
+	    function showSwitchLog(taskName) {
+	        var win = mini.get('switchLogWindow');
+	        var logGrid = mini.get('switchLogGrid');
+	        logGrid.setUrl('../kcschedule/querySwitchLogPage');
+	        logGrid.load({taskName: taskName});
+	        win.show();
+	    }
+
+
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN""http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>接口日志查询</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <link href="../css/demo.css" rel="stylesheet" type="text/css"/>
+    <script src="../js/boot.js" type="text/javascript"></script>
+    <script src="../js/miniui/locale/zh_CN.js" type="text/javascript"></script>
+
+    <!-- 仅保留必要的Highlight.js依赖 -->
+    <link rel="stylesheet" href="../css/github.min.css">
+    <script src="../js/highlight.min.js"></script>
+    <script src="../js/json.min.js"></script>
+</head>
+<body>
+<h1>接口日志查询</h1>
+<h3 style="color:#b896e8">查询说明：输入方法名或服务名可模糊匹配，时间范围为空时查询全部</h3>
+
+<div id="tabs1" class="mini-tabs" activeIndex="0" style="width:100%;height:730px;" plain="false" buttonsAlign="right">
+    <div title="接口日志列表">
+        <div class="mini-toolbar" style="border-bottom:0;padding:0px;">
+            <table style="width:100%;">
+                <td style="white-space:nowrap;">
+                    <!-- 方法名查询框 -->
+                    <input id="methodName" class="mini-textbox" emptyText="请输入方法名" style="width:150px;"
+                           onenter="search"/>
+                    <!-- 服务描述查询框 -->
+                    <input id="description" class="mini-textbox" emptyText="请输入服务描述" style="width:150px;"
+                           onenter="search"/>
+                    <input id="params" class="mini-textbox" emptyText="请求参数" style="width:150px;" onenter="search"/>
+                    <input id="result" class="mini-textbox" emptyText="响应参数" style="width:150px;" onenter="search"/>
+                    <!-- 成功状态下拉框 -->
+                    <select id="success" class="mini-combobox" style="width:120px;" emptyText="全部状态">
+                        <option value="">全部状态</option>
+                        <option value="0">成功</option>
+                        <option value="1">失败</option>
+                    </select>
+                    <!-- 时间范围查询 -->
+                    开始时间<input id="startTime" class="mini-datepicker" style="width:160px;"
+                                   format="yyyy-MM-dd HH:mm:ss" timeFormat="HH:mm:ss" showTime="true"
+                                   showOkButton="true" showClearButton="true"/>-
+                    结束时间<input id="endTime" class="mini-datepicker" style="width:160px;"
+                                   format="yyyy-MM-dd HH:mm:ss" timeFormat="HH:mm:ss" showTime="true"
+                                   showOkButton="true" showClearButton="true"/>
+                    <a class="mini-button" onclick="search()">查询</a>
+                    <a class="mini-button" onclick="resetForm()">重置</a>
+                </td>
+            </table>
+        </div>
+
+        <!-- 日志数据表格 -->
+        <div id="datagrid1" class="mini-datagrid" style="width:100%;height:650px;"
+             url="../kcschedule/scanLogPage"
+             idField="id"
+             allowResize="true"
+             pageSize="20"
+             pageIndex="0"
+             allowCellSelect="true"
+             multiSelect="true"
+        >
+            <div property="columns">
+                <div type="checkcolumn"></div>
+                <div field="id" headerAlign="center" allowSort="true" width="60">ID</div>
+                <div field="methodName" headerAlign="center" allowSort="true" width="150">方法名</div>
+                <div field="description" headerAlign="center" allowSort="true" width="180">服务描述</div>
+                <div field="success" headerAlign="center" allowSort="true" width="80" renderer="renderSuccess">
+                    执行状态
+                </div>
+                <div field="params" headerAlign="center" allowSort="true" width="80" renderer="renderJsonField">
+                    请求参数
+                </div>
+                <div field="result" headerAlign="center" allowSort="true" width="80" renderer="renderJsonField">
+                    响应参数
+                </div>
+                <div field="duration" headerAlign="center" allowSort="true" width="80">耗时(ms)</div>
+                <div field="timestamp" headerAlign="center" allowSort="true" width="180"
+                     dateFormat="yyyy-MM-dd HH:mm:ss">执行时间
+                </div>
+                <div field="error" headerAlign="center" width="200" renderer="renderError">错误信息</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    mini.parse();
+    var grid = mini.get("datagrid1");
+
+    // 初始加载第一页数据
+    grid.load({
+        pageIndex: 0,
+        pageSize: 20
+    });
+
+    // 状态渲染：true->成功(绿色)，false->失败(红色)
+    function renderSuccess(e) {
+        var value = e.value;
+        return value == 0 ? '<span style="color:green">成功</span>' : '<span style="color:red">失败</span>';
+    }
+
+    // 错误信息渲染：超过20字显示省略号
+    function renderError(e) {
+        var value = e.value || '';
+        return value.length > 20 ? value.substr(0, 20) + '...' : value;
+    }
+
+    // 搜索按钮触发查询
+    function search() {
+        // 获取查询条件
+        var params = {
+            methodName: mini.get("methodName").getValue(),
+            description: mini.get("description").getValue(),
+            params: mini.get("params").getValue(),
+            result: mini.get("result").getValue(),
+            success: mini.get("success").getValue() || null,
+            startTime: mini.formatDate(mini.get("startTime").getValue(), 'yyyy-MM-dd HH:mm:ss'),
+            endTime: mini.formatDate(mini.get("endTime").getValue(), 'yyyy-MM-dd HH:mm:ss'),
+            pageIndex: 0,  // 搜索时默认回到第一页
+            pageSize: grid.getPageSize()
+        };
+
+        // 过滤掉空值参数
+        var filteredParams = {};
+        for (var key in params) {
+            // 检查值是否不为空（排除null、undefined、空字符串）
+            if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+                filteredParams[key] = params[key];
+            }
+        }
+
+        grid.load(filteredParams);
+    }
+
+    // 渲染JSON字段，显示简短预览并提供查看详情功能
+    function renderJsonField(e) {
+        const json = e.value || '';
+        const shortText = json.length > 10 ? json.substr(0, 10) + '...' : json;
+
+        // 对JSON字符串进行base64编码，避免特殊字符问题
+        const encodedJson = btoa(unescape(encodeURIComponent(json)));
+
+        return `<a href="javascript:void(0);" onclick="showFormattedJson('${encodedJson}')">${encodeHTML(shortText)}</a>`;
+    }
+
+    // 显示格式化后的JSON内容
+    function showFormattedJson(encodedJsonStr) {
+        // 解码base64编码的JSON字符串
+        let jsonStr = decodeURIComponent(escape(atob(encodedJsonStr)));
+
+        // 如果是字符串类型的JSON对象，解析后再格式化
+        try {
+            if (typeof jsonStr === 'string') {
+                const parsed = JSON.parse(jsonStr);
+                jsonStr = JSON.stringify(parsed, null, 2);
+            }
+        } catch (e) {
+            // 保留原字符串，不做格式化
+        }
+
+        // 创建唯一弹窗ID
+        const winId = "jsonWindow_" + Date.now();
+
+        const html = `
+        <div style="padding:10px;">
+            <pre><code id="jsonPre" class="json">${encodeHTML(jsonStr)}</code></pre>
+        </div>
+    `;
+
+        const win = new mini.Window();
+        win.set({
+            title: "JSON 内容详情",
+            width: 800,
+            height: 500,
+            allowResize: true,
+            allowDrag: true,
+            showCloseButton: true,
+            showMaxButton: true,
+            showModal: true
+        });
+        win.setBody(html);
+        win.show();
+
+        // 确保hljs加载完成后再执行高亮
+        function initHighlight() {
+            if (window.hljs) {
+                hljs.highlightElement(document.getElementById("jsonPre"));
+            } else {
+                // 未加载完成则继续等待
+                setTimeout(initHighlight, 50);
+            }
+        }
+
+        initHighlight();
+    }
+
+    // 重置查询条件
+    function resetForm() {
+        mini.get("methodName").setValue("");
+        mini.get("description").setValue("");
+        mini.get("success").setValue("");
+        mini.get("startTime").setValue("");
+        mini.get("endTime").setValue("");
+        mini.get("params").setValue("");
+        mini.get("result").setValue("");
+    }
+
+    // HTML转义函数，防止XSS和格式问题
+    function encodeHTML(str) {
+        return (str || '').replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    // 按回车键触发搜索
+    function onKeyEnter(e) {
+        search();
+    }
+</script>
+</body>
+</html>

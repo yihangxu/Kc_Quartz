@@ -1,0 +1,4 @@
+com.kcschedule.core.KCScheduleAutoConfiguration
+com.kcschedule.autoconfigure.KCScheduleMailAutoConfiguration
+com.kcschedule.autoconfigure.KCScheduleJakartaMailAutoConfiguration
+com.kcschedule.autoconfigure.KCScheduleMyBatisAutoConfiguration

@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  redis:
+    host: redis-12105.crce178.ap-east-1-1.ec2.cloud.redislabs.com
+    port: 12105
+    password: 5FJ2Juk3GJzI5xBaWWu34rpCXGiA2U2s
+    database: 0
+  datasource:
+    url: jdbc:mysql://sl-swift-hundun-06039662.sqlpub.com:3024/kcschedule_example?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: sqlpub
+    password: gukY2d0KHg4jcIsW
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis:
+  mapper-locations: classpath:/db/*.xml
+
+kcschedule:
+  scan-base-package: com.kcschedule.example
+  max-pool: 50
+  web:
+    username: admin
+    password: admin
+  notify:
+    channels: email
+    mail:
+      host: smtp.example.com
+      port: 465
+      username: your@email.com
+      password: your-password
+      recipients: receiver@example.com
+  queue-name: kcschedule:error

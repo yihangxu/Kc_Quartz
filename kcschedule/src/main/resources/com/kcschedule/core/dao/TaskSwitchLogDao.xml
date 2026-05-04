@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kcschedule.core.dao.TaskSwitchLogDao">
+
+    <resultMap id="BaseResultMap" type="com.kcschedule.core.vo.TaskSwitchLog">
+        <id column="id" property="id"/>
+        <result column="task_name" property="taskName"/>
+        <result column="scheduled_name" property="scheduledName"/>
+        <result column="operation" property="operation"/>
+        <result column="reason" property="reason"/>
+        <result column="operator" property="operator"/>
+        <result column="operate_time" property="operateTime"/>
+    </resultMap>
+
+    <insert id="save">
+        INSERT INTO kcschedule_task_switch_log (task_name, scheduled_name, operation, reason, operator, operate_time)
+        VALUES (#{taskName}, #{scheduledName}, #{operation}, #{reason}, #{operator}, #{operateTime})
+    </insert>
+
+    <select id="queryPage" resultMap="BaseResultMap">
+        SELECT id, task_name, scheduled_name, operation, reason, operator, operate_time
+        FROM kcschedule_task_switch_log
+        <where>
+            <if test="taskName != null and taskName != ''">
+                AND task_name = #{taskName}
+            </if>
+            <if test="scheduledName != null and scheduledName != ''">
+                AND scheduled_name LIKE CONCAT('%', #{scheduledName}, '%')
+            </if>
+            <if test="operation != null and operation != ''">
+                AND operation = #{operation}
+            </if>
+            <if test="operator != null and operator != ''">
+                AND operator LIKE CONCAT('%', #{operator}, '%')
+            </if>
+        </where>
+        ORDER BY operate_time DESC
+        LIMIT #{pageSize} OFFSET
+        <choose>
+            <when test="offset != null and offset >= 0">
+                #{offset}
+            </when>
+            <otherwise>
+                0
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="count" resultType="int">
+        SELECT COUNT(1)
+        FROM kcschedule_task_switch_log
+        <where>
+            <if test="taskName != null and taskName != ''">
+                AND task_name = #{taskName}
+            </if>
+            <if test="scheduledName != null and scheduledName != ''">
+                AND scheduled_name LIKE CONCAT('%', #{scheduledName}, '%')
+            </if>
+            <if test="operation != null and operation != ''">
+                AND operation = #{operation}
+            </if>
+            <if test="operator != null and operator != ''">
+                AND operator LIKE CONCAT('%', #{operator}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="findLatestByTaskName" resultMap="BaseResultMap">
+        SELECT id, task_name, scheduled_name, operation, reason, operator, operate_time
+        FROM kcschedule_task_switch_log
+        WHERE task_name = #{taskName}
+        ORDER BY operate_time DESC
+    </select>
+
+</mapper>

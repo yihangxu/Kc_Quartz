@@ -1,0 +1,23 @@
+# Build
+target/
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven
+*.jar
+*.war
+!src/main/resources/static/js/miniui/*.js
+
+# Logs
+*.log

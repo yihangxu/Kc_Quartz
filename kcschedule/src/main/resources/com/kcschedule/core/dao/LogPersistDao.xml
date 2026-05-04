@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.kcschedule.core.dao.LogPersistDao">
+
+    <!-- Create table SQL (for reference):
+    CREATE TABLE kcschedule_service_log (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        method_name VARCHAR(255),
+        description VARCHAR(500),
+        success INT DEFAULT 0,
+        duration BIGINT,
+        params TEXT,
+        result TEXT,
+        error TEXT,
+        timestamp DATETIME
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    -->
+
+    <insert id="save">
+        DELETE FROM kcschedule_service_log
+        WHERE timestamp <![CDATA[ <= ]]> DATE_SUB(NOW(), INTERVAL 30 DAY);
+        INSERT INTO kcschedule_service_log (method_name, description, success, duration, params, result, error, timestamp)
+        VALUES (#{methodName}, #{description}, #{success}, #{duration}, #{params}, #{result}, #{error}, #{timestamp})
+    </insert>
+
+    <select id="queryLogPage" resultType="com.kcschedule.core.vo.MethodLogDTO">
+        SELECT id,
+               method_name  AS methodName,
+               description,
+               success,
+               duration,
+               params,
+               result,
+               error,
+               timestamp
+        FROM kcschedule_service_log
+        <where>
+            <if test="methodName != null and methodName != ''">
+                AND method_name LIKE CONCAT('%', #{methodName}, '%')
+            </if>
+            <if test="description != null and description != ''">
+                AND description LIKE CONCAT('%', #{description}, '%')
+            </if>
+            <if test="success != null">
+                AND success = #{success}
+            </if>
+            <if test="startTime != null and startTime != '' and endTime != null and endTime != ''">
+                AND timestamp BETWEEN #{startTime} AND #{endTime}
+            </if>
+        </where>
+        ORDER BY timestamp DESC
+        LIMIT #{pageSize} OFFSET
+        <choose>
+            <when test="offset != null and offset >= 0">
+                #{offset}
+            </when>
+            <otherwise>
+                0
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="countLog" resultType="int">
+        SELECT COUNT(1)
+        FROM kcschedule_service_log
+        <where>
+            <if test="methodName != null and methodName != ''">
+                AND method_name LIKE CONCAT('%', #{methodName}, '%')
+            </if>
+            <if test="description != null and description != ''">
+                AND description LIKE CONCAT('%', #{description}, '%')
+            </if>
+            <if test="success != null">
+                AND success = #{success}
+            </if>
+            <if test="startTime != null and endTime != null">
+                AND timestamp BETWEEN #{startTime} AND #{endTime}
+            </if>
+        </where>
+    </select>
+</mapper>
