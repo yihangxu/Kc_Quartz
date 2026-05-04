@@ -17,6 +17,12 @@
 
 ---
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="KCSchedule Web 管理界面" width="800">
+</p>
+
+---
+
 <a id="中文文档"></a>
 # 中文文档
 
